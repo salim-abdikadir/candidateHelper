@@ -161,7 +161,13 @@ const resourceOptions = [
   "Catering",
 ];
 
-export function EventManagementForm() {
+interface EventManagementFormProps {
+  onSuccess?: () => void;
+}
+
+export function EventManagementForm({
+  onSuccess,
+}: EventManagementFormProps = {}) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [selectedResources, setSelectedResources] = React.useState<string[]>(
@@ -192,6 +198,7 @@ export function EventManagementForm() {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       console.log("Event management data:", data);
       setIsSuccess(true);
+      onSuccess?.();
     } catch (error) {
       console.error("Event creation error:", error);
     } finally {

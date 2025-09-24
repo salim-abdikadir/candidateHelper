@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { EventsDataTable } from "@/components/events/events-data-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,8 +12,18 @@ import {
   AlertCircle,
   Users,
 } from "lucide-react";
+import { EventManagementForm } from "@/components/forms/event-management-form";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export default function EventsPage() {
+  const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -22,10 +33,22 @@ export default function EventsPage() {
             Manage campaign events, rallies, and meetings
           </p>
         </div>
-        <Button className="btn-gradient">
-          <Plus className="mr-2 h-4 w-4" />
-          Create Event
-        </Button>
+        <Dialog open={isCreateEventOpen} onOpenChange={setIsCreateEventOpen}>
+          <DialogTrigger asChild>
+            <Button className="btn-gradient">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Event
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Create New Event</DialogTitle>
+            </DialogHeader>
+            <EventManagementForm
+              onSuccess={() => setIsCreateEventOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Stats Cards */}

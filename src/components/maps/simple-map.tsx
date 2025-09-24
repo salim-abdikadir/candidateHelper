@@ -418,3 +418,7 @@ export function SimpleMap({ className }: SimpleMapProps) {
     </div>
   );
 }
+
+
+
+

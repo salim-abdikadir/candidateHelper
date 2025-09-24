@@ -2,6 +2,14 @@
 
 import { useState } from "react";
 import { FundManagementDataTable } from "@/components/funds/fund-management-data-table";
+import { FundManagementForm } from "@/components/forms/fund-management-form";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -46,6 +54,7 @@ import {
 export default function FundsPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [timeRange, setTimeRange] = useState("6months");
+  const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
 
   // Mock data for charts
   const monthlyData = [
@@ -95,10 +104,25 @@ export default function FundsPage() {
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Button className="btn-gradient">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Transaction
-          </Button>
+          <Dialog
+            open={isAddTransactionOpen}
+            onOpenChange={setIsAddTransactionOpen}
+          >
+            <DialogTrigger asChild>
+              <Button className="btn-gradient">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Transaction
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Add New Transaction</DialogTitle>
+              </DialogHeader>
+              <FundManagementForm
+                onSuccess={() => setIsAddTransactionOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

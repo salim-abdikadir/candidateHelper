@@ -43,10 +43,19 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ModeToggle } from "@/components/theme-toggle";
+import { CommunicationMessageForm } from "@/components/forms/communication-message-form";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export default function AdminCommunicationPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [searchTerm, setSearchTerm] = useState("");
+  const [isNewMessageOpen, setIsNewMessageOpen] = useState(false);
 
   // Mock data for communications
   const messages = [
@@ -130,10 +139,22 @@ export default function AdminCommunicationPage() {
               Manage mass messaging and communication campaigns
             </p>
           </div>
-          <Button className="btn-gradient">
-            <Plus className="mr-2 h-4 w-4" />
-            New Message
-          </Button>
+          <Dialog open={isNewMessageOpen} onOpenChange={setIsNewMessageOpen}>
+            <DialogTrigger asChild>
+              <Button className="btn-gradient">
+                <Plus className="mr-2 h-4 w-4" />
+                New Message
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Create New Message</DialogTitle>
+              </DialogHeader>
+              <CommunicationMessageForm
+                onSuccess={() => setIsNewMessageOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

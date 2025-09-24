@@ -3,7 +3,6 @@
 import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import {
   User,
   Phone,
@@ -16,6 +15,8 @@ import {
   Users,
   Calendar,
   Clock,
+  Plus,
+  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -34,120 +35,60 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  operatorRegistrationSchema,
+  OperatorRegistrationFormData,
+} from "@/lib/validations/operator";
 
-const operatorRegistrationSchema = z.object({
-  // Personal Information
-  firstName: z.string().min(2, "First name must be at least 2 characters"),
-  lastName: z.string().min(2, "Last name must be at least 2 characters"),
-  phoneNumber: z
-    .string()
-    .min(10, "Phone number must be at least 10 characters"),
-  email: z.string().email("Please enter a valid email address"),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
-  gender: z
-    .enum(["male", "female", "other"])
-    .refine((val) => val !== undefined, {
-      message: "Please select a gender",
-    }),
-
-  // Address Information
-  district: z.string().min(1, "District is required"),
-  region: z.string().min(1, "Region is required"),
-  address: z.string().min(10, "Address must be at least 10 characters"),
-
-  // Professional Information
-  employeeId: z.string().min(3, "Employee ID must be at least 3 characters"),
-  position: z.enum(["field_operator", "supervisor", "coordinator", "manager"], {
-    message: "Please select a position",
-  }),
-  department: z.enum(
-    ["operations", "logistics", "communication", "finance", "security"],
-    {
-      message: "Please select a department",
-    }
-  ),
-  startDate: z.string().min(1, "Start date is required"),
-  salary: z.string().optional(),
-  emergencyContact: z.string().min(2, "Emergency contact name is required"),
-  emergencyPhone: z.string().min(10, "Emergency contact phone is required"),
-
-  // Skills and Qualifications
-  education: z.string().min(1, "Education level is required"),
-  experience: z.string().min(1, "Years of experience is required"),
-  languages: z.array(z.string()).min(1, "At least one language is required"),
-  skills: z.string().optional(),
-  certifications: z.string().optional(),
-
-  // Work Preferences
-  workSchedule: z.enum(["full_time", "part_time", "flexible"], {
-    message: "Please select work schedule",
-  }),
-  preferredDistricts: z
-    .array(z.string())
-    .min(1, "At least one district is required"),
-  vehicleAccess: z.boolean().optional(),
-  driverLicense: z.boolean().optional(),
-  vehicleType: z.string().optional(),
-
-  // System Access
-  systemAccess: z
-    .array(z.string())
-    .min(1, "At least one access level is required"),
-  canManageSupporters: z.boolean().optional(),
-  canManageFunds: z.boolean().optional(),
-  canSendMessages: z.boolean().optional(),
-  canViewReports: z.boolean().optional(),
-
-  // Terms and Conditions
-  agreeToTerms: z.boolean().refine((val) => val === true, {
-    message: "You must agree to the terms and conditions",
-  }),
-  agreeToConfidentiality: z.boolean().refine((val) => val === true, {
-    message: "You must agree to confidentiality agreement",
-  }),
-  agreeToBackgroundCheck: z.boolean().refine((val) => val === true, {
-    message: "You must agree to background check",
-  }),
-});
-
-type OperatorRegistrationFormData = z.infer<typeof operatorRegistrationSchema>;
-
-const districts = [
-  "Hargeisa Central",
-  "Hargeisa North",
-  "Hargeisa South",
-  "Hargeisa East",
-  "Hargeisa West",
-  "Berbera",
-  "Burao",
-  "Borama",
-  "Las Anod",
-  "Erigavo",
-  "Ceerigaabo",
-  "Caynabo",
-  "Laasqoray",
-  "Oodweyne",
-  "Sheikh",
-  "Zeila",
+// Available actions for operator permissions
+const availableActions = [
+  "view_supporters",
+  "manage_supporters",
+  "view_events",
+  "manage_events",
+  "view_funds",
+  "manage_funds",
+  "send_messages",
+  "view_reports",
+  "manage_tasks",
+  "view_operators",
+  "manage_operators",
+  "system_admin",
 ];
 
-const regions = [
-  "Maroodi Jeex",
-  "Sanaag",
-  "Sool",
-  "Togdheer",
-  "Awdal",
-  "Sahil",
-];
+// Helper function to add phone number
+const addPhoneNumber = (phones: any[], setValue: any) => {
+  const newPhone = { phone_number: "", phone_type: "primary" as const };
+  setValue("phones", [...phones, newPhone]);
+};
 
-const languages = ["Somali", "Arabic", "English", "French", "Italian"];
+// Helper function to remove phone number
+const removePhoneNumber = (index: number, phones: any[], setValue: any) => {
+  const updatedPhones = phones.filter((_, i) => i !== index);
+  setValue("phones", updatedPhones);
+};
 
-const systemAccessLevels = [
-  "basic",
-  "intermediate",
-  "advanced",
-  "administrator",
-];
+// Helper function to add emergency contact
+const addEmergencyContact = (contacts: any[], setValue: any) => {
+  const newContact = {
+    name: "",
+    relationship: "",
+    phone_number: "",
+    email: "",
+    address: "",
+  };
+  setValue("emergency_contacts", [...contacts, newContact]);
+};
+
+// Helper function to remove emergency contact
+const removeEmergencyContact = (
+  index: number,
+  contacts: any[],
+  setValue: any
+) => {
+  const updatedContacts = contacts.filter((_, i) => i !== index);
+  setValue("emergency_contacts", updatedContacts);
+};
 
 export function OperatorRegistrationForm() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -156,18 +97,34 @@ export function OperatorRegistrationForm() {
   const form = useForm<OperatorRegistrationFormData>({
     resolver: zodResolver(operatorRegistrationSchema),
     defaultValues: {
-      vehicleAccess: false,
-      driverLicense: false,
-      canManageSupporters: false,
-      canManageFunds: false,
-      canSendMessages: false,
-      canViewReports: false,
-      agreeToTerms: false,
-      agreeToConfidentiality: false,
-      agreeToBackgroundCheck: false,
-      languages: [],
-      preferredDistricts: [],
-      systemAccess: [],
+      firstname: "",
+      middlename: "",
+      lastname: "",
+      fourthname: "",
+      birthdate: "",
+      gender: undefined,
+      language: "",
+      special_needs: "",
+      email: "",
+      address: "",
+      phones: [{ phone_number: "", phone_type: "primary" }],
+      emergency_contacts: [
+        {
+          name: "",
+          relationship: "",
+          phone_number: "",
+          email: "",
+          address: "",
+        },
+      ],
+      latitude: undefined,
+      longitude: undefined,
+      role: "operator",
+      status: "pending",
+      allowed_actions: [],
+      agree_to_terms: false,
+      agree_to_confidentiality: false,
+      agree_to_background_check: false,
     },
   });
 
@@ -242,86 +199,77 @@ export function OperatorRegistrationForm() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="firstName">First Name *</Label>
+                <Label htmlFor="firstname">First Name *</Label>
                 <Input
-                  id="firstName"
-                  {...form.register("firstName")}
+                  id="firstname"
+                  {...form.register("firstname")}
                   placeholder="Enter first name"
                 />
-                {form.formState.errors.firstName && (
+                {form.formState.errors.firstname && (
                   <p className="text-sm text-destructive">
-                    {form.formState.errors.firstName.message}
+                    {form.formState.errors.firstname.message}
                   </p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name *</Label>
+                <Label htmlFor="lastname">Last Name *</Label>
                 <Input
-                  id="lastName"
-                  {...form.register("lastName")}
+                  id="lastname"
+                  {...form.register("lastname")}
                   placeholder="Enter last name"
                 />
-                {form.formState.errors.lastName && (
+                {form.formState.errors.lastname && (
                   <p className="text-sm text-destructive">
-                    {form.formState.errors.lastName.message}
+                    {form.formState.errors.lastname.message}
                   </p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phoneNumber">Phone Number *</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="phoneNumber"
-                    {...form.register("phoneNumber")}
-                    placeholder="+252 61 234 5678"
-                    className="pl-10"
-                  />
-                </div>
-                {form.formState.errors.phoneNumber && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.phoneNumber.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address *</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    {...form.register("email")}
-                    placeholder="operator@campaign.com"
-                    className="pl-10"
-                  />
-                </div>
-                {form.formState.errors.email && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.email.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+                <Label htmlFor="middlename">Middle Name</Label>
                 <Input
-                  id="dateOfBirth"
-                  type="date"
-                  {...form.register("dateOfBirth")}
+                  id="middlename"
+                  {...form.register("middlename")}
+                  placeholder="Enter middle name (optional)"
                 />
-                {form.formState.errors.dateOfBirth && (
+                {form.formState.errors.middlename && (
                   <p className="text-sm text-destructive">
-                    {form.formState.errors.dateOfBirth.message}
+                    {form.formState.errors.middlename.message}
                   </p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="gender">Gender *</Label>
+                <Label htmlFor="fourthname">Fourth Name</Label>
+                <Input
+                  id="fourthname"
+                  {...form.register("fourthname")}
+                  placeholder="Enter fourth name (optional)"
+                />
+                {form.formState.errors.fourthname && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.fourthname.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="birthdate">Date of Birth</Label>
+                <Input
+                  id="birthdate"
+                  type="date"
+                  {...form.register("birthdate")}
+                />
+                {form.formState.errors.birthdate && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.birthdate.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="gender">Gender</Label>
                 <Select
                   onValueChange={(value) =>
                     form.setValue("gender", value as any)
@@ -342,66 +290,68 @@ export function OperatorRegistrationForm() {
                   </p>
                 )}
               </div>
-            </div>
-          </div>
-
-          {/* Address Information Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-semibold">Address Information</h3>
-            </div>
-            <Separator />
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="region">Region *</Label>
-                <Select
-                  onValueChange={(value) => form.setValue("region", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select region" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {regions.map((region) => (
-                      <SelectItem key={region} value={region}>
-                        {region}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.region && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.region.message}
-                  </p>
-                )}
-              </div>
 
               <div className="space-y-2">
-                <Label htmlFor="district">District *</Label>
-                <Select
-                  onValueChange={(value) => form.setValue("district", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select district" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {districts.map((district) => (
-                      <SelectItem key={district} value={district}>
-                        {district}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.district && (
+                <Label htmlFor="language">Language</Label>
+                <Input
+                  id="language"
+                  {...form.register("language")}
+                  placeholder="Primary language"
+                />
+                {form.formState.errors.language && (
                   <p className="text-sm text-destructive">
-                    {form.formState.errors.district.message}
+                    {form.formState.errors.language.message}
                   </p>
                 )}
               </div>
 
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="address">Full Address *</Label>
+                <Label htmlFor="special_needs">Special Needs</Label>
+                <Textarea
+                  id="special_needs"
+                  {...form.register("special_needs")}
+                  placeholder="Describe any special needs or accommodations"
+                  rows={3}
+                />
+                {form.formState.errors.special_needs && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.special_needs.message}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Contact Information Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Phone className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-semibold">Contact Information</h3>
+            </div>
+            <Separator />
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    {...form.register("email")}
+                    placeholder="operator@campaign.com"
+                    className="pl-10"
+                  />
+                </div>
+                {form.formState.errors.email && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.email.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="address">Address</Label>
                 <Textarea
                   id="address"
                   {...form.register("address")}
@@ -414,269 +364,294 @@ export function OperatorRegistrationForm() {
                   </p>
                 )}
               </div>
+
+              {/* Phone Numbers */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Phone Numbers *</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      addPhoneNumber(form.watch("phones") || [], form.setValue)
+                    }
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Phone
+                  </Button>
+                </div>
+
+                {form.watch("phones")?.map((phone, index) => (
+                  <div key={index} className="flex gap-2 items-end">
+                    <div className="flex-1 space-y-2">
+                      <Label htmlFor={`phone_${index}`}>Phone Number</Label>
+                      <Input
+                        id={`phone_${index}`}
+                        {...form.register(`phones.${index}.phone_number`)}
+                        placeholder="+252 61 234 5678"
+                      />
+                    </div>
+                    <div className="w-32 space-y-2">
+                      <Label htmlFor={`phone_type_${index}`}>Type</Label>
+                      <Select
+                        onValueChange={(value) =>
+                          form.setValue(
+                            `phones.${index}.phone_type`,
+                            value as any
+                          )
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="primary">Primary</SelectItem>
+                          <SelectItem value="secondary">Secondary</SelectItem>
+                          <SelectItem value="emergency">Emergency</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {form.watch("phones")?.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          removePhoneNumber(
+                            index,
+                            form.watch("phones") || [],
+                            form.setValue
+                          )
+                        }
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                {form.formState.errors.phones && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.phones.message}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Professional Information Section */}
+          {/* Emergency Contacts Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Building className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-semibold">
-                Professional Information
-              </h3>
+              <Users className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-semibold">Emergency Contacts</h3>
             </div>
             <Separator />
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="employeeId">Employee ID *</Label>
-                <Input
-                  id="employeeId"
-                  {...form.register("employeeId")}
-                  placeholder="EMP001"
-                />
-                {form.formState.errors.employeeId && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.employeeId.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="position">Position *</Label>
-                <Select
-                  onValueChange={(value) =>
-                    form.setValue("position", value as any)
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>Emergency Contacts *</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    addEmergencyContact(
+                      form.watch("emergency_contacts") || [],
+                      form.setValue
+                    )
                   }
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select position" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="field_operator">
-                      Field Operator
-                    </SelectItem>
-                    <SelectItem value="supervisor">Supervisor</SelectItem>
-                    <SelectItem value="coordinator">Coordinator</SelectItem>
-                    <SelectItem value="manager">Manager</SelectItem>
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.position && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.position.message}
-                  </p>
-                )}
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Contact
+                </Button>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="department">Department *</Label>
-                <Select
-                  onValueChange={(value) =>
-                    form.setValue("department", value as any)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="operations">Operations</SelectItem>
-                    <SelectItem value="logistics">Logistics</SelectItem>
-                    <SelectItem value="communication">Communication</SelectItem>
-                    <SelectItem value="finance">Finance</SelectItem>
-                    <SelectItem value="security">Security</SelectItem>
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.department && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.department.message}
-                  </p>
-                )}
-              </div>
+              {form.watch("emergency_contacts")?.map((contact, index) => (
+                <div key={index} className="border rounded-lg p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium">
+                      Emergency Contact {index + 1}
+                    </h4>
+                    {form.watch("emergency_contacts")?.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          removeEmergencyContact(
+                            index,
+                            form.watch("emergency_contacts") || [],
+                            form.setValue
+                          )
+                        }
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="startDate">Start Date *</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  {...form.register("startDate")}
-                />
-                {form.formState.errors.startDate && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.startDate.message}
-                  </p>
-                )}
-              </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor={`emergency_name_${index}`}>Name *</Label>
+                      <Input
+                        id={`emergency_name_${index}`}
+                        {...form.register(`emergency_contacts.${index}.name`)}
+                        placeholder="Contact person name"
+                      />
+                    </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="salary">Salary (Optional)</Label>
-                <Input
-                  id="salary"
-                  {...form.register("salary")}
-                  placeholder="Enter salary amount"
-                />
-              </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`emergency_relationship_${index}`}>
+                        Relationship *
+                      </Label>
+                      <Input
+                        id={`emergency_relationship_${index}`}
+                        {...form.register(
+                          `emergency_contacts.${index}.relationship`
+                        )}
+                        placeholder="e.g., Spouse, Parent, Sibling"
+                      />
+                    </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="education">Education Level *</Label>
-                <Select
-                  onValueChange={(value) => form.setValue("education", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select education level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="primary">Primary School</SelectItem>
-                    <SelectItem value="secondary">Secondary School</SelectItem>
-                    <SelectItem value="diploma">Diploma</SelectItem>
-                    <SelectItem value="bachelor">Bachelor's Degree</SelectItem>
-                    <SelectItem value="master">Master's Degree</SelectItem>
-                    <SelectItem value="phd">PhD</SelectItem>
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.education && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.education.message}
-                  </p>
-                )}
-              </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`emergency_phone_${index}`}>
+                        Phone Number *
+                      </Label>
+                      <Input
+                        id={`emergency_phone_${index}`}
+                        {...form.register(
+                          `emergency_contacts.${index}.phone_number`
+                        )}
+                        placeholder="+252 61 234 5678"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`emergency_email_${index}`}>Email</Label>
+                      <Input
+                        id={`emergency_email_${index}`}
+                        type="email"
+                        {...form.register(`emergency_contacts.${index}.email`)}
+                        placeholder="contact@email.com"
+                      />
+                    </div>
+
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor={`emergency_address_${index}`}>
+                        Address
+                      </Label>
+                      <Textarea
+                        id={`emergency_address_${index}`}
+                        {...form.register(
+                          `emergency_contacts.${index}.address`
+                        )}
+                        placeholder="Emergency contact address"
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {form.formState.errors.emergency_contacts && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.emergency_contacts.message}
+                </p>
+              )}
             </div>
           </div>
 
-          {/* Emergency Contact Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Phone className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-semibold">Emergency Contact</h3>
-            </div>
-            <Separator />
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="emergencyContact">
-                  Emergency Contact Name *
-                </Label>
-                <Input
-                  id="emergencyContact"
-                  {...form.register("emergencyContact")}
-                  placeholder="Emergency contact person"
-                />
-                {form.formState.errors.emergencyContact && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.emergencyContact.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="emergencyPhone">
-                  Emergency Contact Phone *
-                </Label>
-                <Input
-                  id="emergencyPhone"
-                  {...form.register("emergencyPhone")}
-                  placeholder="+252 61 234 5678"
-                />
-                {form.formState.errors.emergencyPhone && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.emergencyPhone.message}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* System Access Section */}
+          {/* Role and Permissions Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-semibold">
-                System Access & Permissions
-              </h3>
+              <h3 className="text-lg font-semibold">Role and Permissions</h3>
             </div>
             <Separator />
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label>System Access Level *</Label>
-                <div className="space-y-2">
-                  {systemAccessLevels.map((level) => (
-                    <div key={level} className="flex items-center space-x-2">
+                <Label htmlFor="role">Role *</Label>
+                <Select
+                  onValueChange={(value) => form.setValue("role", value as any)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="operator">Operator</SelectItem>
+                    <SelectItem value="supervisor">Supervisor</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.role && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.role.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="status">Status *</Label>
+                <Select
+                  onValueChange={(value) =>
+                    form.setValue("status", value as any)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.status && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.status.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label>Allowed Actions *</Label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {availableActions.map((action) => (
+                    <div key={action} className="flex items-center space-x-2">
                       <Checkbox
-                        id={level}
+                        id={action}
                         checked={
-                          form.watch("systemAccess")?.includes(level) || false
+                          form.watch("allowed_actions")?.includes(action) ||
+                          false
                         }
                         onCheckedChange={(checked) => {
-                          const current = form.getValues("systemAccess") || [];
+                          const current =
+                            form.getValues("allowed_actions") || [];
                           if (checked) {
-                            form.setValue("systemAccess", [...current, level]);
+                            form.setValue("allowed_actions", [
+                              ...current,
+                              action,
+                            ]);
                           } else {
                             form.setValue(
-                              "systemAccess",
-                              current.filter((l) => l !== level)
+                              "allowed_actions",
+                              current.filter((a) => a !== action)
                             );
                           }
                         }}
                       />
-                      <Label htmlFor={level} className="capitalize">
-                        {level}
+                      <Label htmlFor={action} className="text-sm capitalize">
+                        {action.replace(/_/g, " ")}
                       </Label>
                     </div>
                   ))}
                 </div>
-                {form.formState.errors.systemAccess && (
+                {form.formState.errors.allowed_actions && (
                   <p className="text-sm text-destructive">
-                    {form.formState.errors.systemAccess.message}
+                    {form.formState.errors.allowed_actions.message}
                   </p>
                 )}
-              </div>
-
-              <div className="space-y-2">
-                <Label>Specific Permissions</Label>
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="canManageSupporters"
-                      checked={form.watch("canManageSupporters")}
-                      onCheckedChange={(checked) =>
-                        form.setValue("canManageSupporters", checked)
-                      }
-                    />
-                    <Label htmlFor="canManageSupporters">
-                      Manage Supporters
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="canManageFunds"
-                      checked={form.watch("canManageFunds")}
-                      onCheckedChange={(checked) =>
-                        form.setValue("canManageFunds", checked)
-                      }
-                    />
-                    <Label htmlFor="canManageFunds">Manage Funds</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="canSendMessages"
-                      checked={form.watch("canSendMessages")}
-                      onCheckedChange={(checked) =>
-                        form.setValue("canSendMessages", checked)
-                      }
-                    />
-                    <Label htmlFor="canSendMessages">Send Messages</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="canViewReports"
-                      checked={form.watch("canViewReports")}
-                      onCheckedChange={(checked) =>
-                        form.setValue("canViewReports", checked)
-                      }
-                    />
-                    <Label htmlFor="canViewReports">View Reports</Label>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -689,15 +664,15 @@ export function OperatorRegistrationForm() {
             <div className="space-y-4">
               <div className="flex items-start space-x-2">
                 <Checkbox
-                  id="agreeToTerms"
-                  checked={form.watch("agreeToTerms")}
+                  id="agree_to_terms"
+                  checked={form.watch("agree_to_terms")}
                   onCheckedChange={(checked) =>
-                    form.setValue("agreeToTerms", checked as boolean)
+                    form.setValue("agree_to_terms", checked as boolean)
                   }
                 />
                 <div className="space-y-1">
                   <Label
-                    htmlFor="agreeToTerms"
+                    htmlFor="agree_to_terms"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
                     I agree to the employment terms and conditions *
@@ -708,23 +683,26 @@ export function OperatorRegistrationForm() {
                   </p>
                 </div>
               </div>
-              {form.formState.errors.agreeToTerms && (
+              {form.formState.errors.agree_to_terms && (
                 <p className="text-sm text-destructive">
-                  {form.formState.errors.agreeToTerms.message}
+                  {form.formState.errors.agree_to_terms.message}
                 </p>
               )}
 
               <div className="flex items-start space-x-2">
                 <Checkbox
-                  id="agreeToConfidentiality"
-                  checked={form.watch("agreeToConfidentiality")}
+                  id="agree_to_confidentiality"
+                  checked={form.watch("agree_to_confidentiality")}
                   onCheckedChange={(checked) =>
-                    form.setValue("agreeToConfidentiality", checked as boolean)
+                    form.setValue(
+                      "agree_to_confidentiality",
+                      checked as boolean
+                    )
                   }
                 />
                 <div className="space-y-1">
                   <Label
-                    htmlFor="agreeToConfidentiality"
+                    htmlFor="agree_to_confidentiality"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
                     I agree to confidentiality agreement *
@@ -735,23 +713,26 @@ export function OperatorRegistrationForm() {
                   </p>
                 </div>
               </div>
-              {form.formState.errors.agreeToConfidentiality && (
+              {form.formState.errors.agree_to_confidentiality && (
                 <p className="text-sm text-destructive">
-                  {form.formState.errors.agreeToConfidentiality.message}
+                  {form.formState.errors.agree_to_confidentiality.message}
                 </p>
               )}
 
               <div className="flex items-start space-x-2">
                 <Checkbox
-                  id="agreeToBackgroundCheck"
-                  checked={form.watch("agreeToBackgroundCheck")}
+                  id="agree_to_background_check"
+                  checked={form.watch("agree_to_background_check")}
                   onCheckedChange={(checked) =>
-                    form.setValue("agreeToBackgroundCheck", checked as boolean)
+                    form.setValue(
+                      "agree_to_background_check",
+                      checked as boolean
+                    )
                   }
                 />
                 <div className="space-y-1">
                   <Label
-                    htmlFor="agreeToBackgroundCheck"
+                    htmlFor="agree_to_background_check"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
                     I consent to background check *
@@ -762,9 +743,9 @@ export function OperatorRegistrationForm() {
                   </p>
                 </div>
               </div>
-              {form.formState.errors.agreeToBackgroundCheck && (
+              {form.formState.errors.agree_to_background_check && (
                 <p className="text-sm text-destructive">
-                  {form.formState.errors.agreeToBackgroundCheck.message}
+                  {form.formState.errors.agree_to_background_check.message}
                 </p>
               )}
             </div>

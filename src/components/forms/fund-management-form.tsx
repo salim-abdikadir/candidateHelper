@@ -172,7 +172,13 @@ const campaigns = [
   "Other",
 ];
 
-export function FundManagementForm() {
+interface FundManagementFormProps {
+  onSuccess?: () => void;
+}
+
+export function FundManagementForm({
+  onSuccess,
+}: FundManagementFormProps = {}) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
@@ -200,6 +206,7 @@ export function FundManagementForm() {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       console.log("Fund management data:", data);
       setIsSuccess(true);
+      onSuccess?.();
     } catch (error) {
       console.error("Transaction error:", error);
     } finally {

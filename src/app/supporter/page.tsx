@@ -101,6 +101,7 @@ import {
 import { ModeToggle } from "@/components/theme-toggle";
 import { CHART_COLORS, getChartColor } from "@/lib/chart-colors";
 import { SupporterRegistrationForm } from "@/components/forms/supporter-registration-form";
+import { VoterRegistrationForm } from "@/components/forms/voter-registration-form";
 import { SupportersDataTable } from "@/components/supporters/supporters-data-table";
 
 export default function SupporterDashboard() {
@@ -447,9 +448,10 @@ export default function SupporterDashboard() {
             onValueChange={setActiveTab}
             className="space-y-4"
           >
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="home">Home</TabsTrigger>
               <TabsTrigger value="register">Register</TabsTrigger>
+              <TabsTrigger value="voter">Voter</TabsTrigger>
               <TabsTrigger value="supporters">Supporters</TabsTrigger>
               <TabsTrigger value="profile">Profile</TabsTrigger>
               <TabsTrigger value="support">Support</TabsTrigger>
@@ -623,6 +625,11 @@ export default function SupporterDashboard() {
             {/* Register Tab */}
             <TabsContent value="register" className="space-y-4">
               <SupporterRegistrationForm />
+            </TabsContent>
+
+            {/* Voter Tab */}
+            <TabsContent value="voter" className="space-y-4">
+              <VoterRegistrationForm />
             </TabsContent>
 
             {/* Supporters Tab */}

@@ -1,9 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import {
   CalendarIcon,
   MapPin,
@@ -13,6 +12,10 @@ import {
   IdCard,
   Upload,
   CheckCircle,
+  Plus,
+  Trash2,
+  Users,
+  Navigation,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -31,110 +34,144 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  supporterRegistrationSchema,
+  type SupporterRegistrationFormData,
+} from "@/lib/validations/supporter";
 
-const supporterRegistrationSchema = z.object({
-  // Personal Information
-  firstName: z.string().min(2, "First name must be at least 2 characters"),
-  lastName: z.string().min(2, "Last name must be at least 2 characters"),
-  phoneNumber: z
-    .string()
-    .min(10, "Phone number must be at least 10 characters"),
-  email: z.string().email("Please enter a valid email address"),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
-  gender: z
-    .enum(["male", "female", "other"])
-    .refine((val) => val !== undefined, {
-      message: "Please select a gender",
-    }),
-
-  // Address Information
-  district: z.string().min(1, "District is required"),
-  region: z.string().min(1, "Region is required"),
-  address: z.string().min(10, "Address must be at least 10 characters"),
-
-  // ID Information
-  idType: z
-    .enum(["national_id", "passport", "drivers_license"])
-    .refine((val) => val !== undefined, {
-      message: "Please select an ID type",
-    }),
-  idNumber: z.string().min(5, "ID number must be at least 5 characters"),
-
-  // Campaign Preferences
-  preferredLanguage: z
-    .enum(["somali", "arabic", "english"])
-    .refine((val) => val !== undefined, {
-      message: "Please select a preferred language",
-    }),
-  communicationMethod: z
-    .enum(["sms", "email", "phone", "whatsapp"])
-    .refine((val) => val !== undefined, {
-      message: "Please select a communication method",
-    }),
-
-  // Terms and Conditions
-  agreeToTerms: z.boolean().refine((val) => val === true, {
-    message: "You must agree to the terms and conditions",
-  }),
-  agreeToDataProcessing: z.boolean().refine((val) => val === true, {
-    message: "You must agree to data processing",
-  }),
-  receiveUpdates: z.boolean().optional(),
-
-  // Additional Information
-  occupation: z.string().optional(),
-  education: z.string().optional(),
-  specialNeeds: z.string().optional(),
-  emergencyContact: z.string().optional(),
-  emergencyPhone: z.string().optional(),
-});
-
-type SupporterRegistrationFormData = z.infer<
-  typeof supporterRegistrationSchema
->;
-
-const districts = [
-  "Hargeisa Central",
-  "Hargeisa North",
-  "Hargeisa South",
-  "Hargeisa East",
-  "Hargeisa West",
-  "Berbera",
-  "Burao",
-  "Borama",
-  "Las Anod",
-  "Erigavo",
-  "Ceerigaabo",
-  "Caynabo",
-  "Laasqoray",
-  "Oodweyne",
-  "Sheikh",
-  "Zeila",
+// Mock data for regions, districts, and polling stations
+const regions = [
+  { id: 1, name: "Maroodi Jeex" },
+  { id: 2, name: "Sanaag" },
+  { id: 3, name: "Sool" },
+  { id: 4, name: "Togdheer" },
+  { id: 5, name: "Awdal" },
+  { id: 6, name: "Sahil" },
 ];
 
-const regions = [
-  "Maroodi Jeex",
-  "Sanaag",
-  "Sool",
-  "Togdheer",
-  "Awdal",
-  "Sahil",
+const districts = [
+  { id: 1, name: "Hargeisa Central", region_id: 1 },
+  { id: 2, name: "Hargeisa North", region_id: 1 },
+  { id: 3, name: "Hargeisa South", region_id: 1 },
+  { id: 4, name: "Hargeisa East", region_id: 1 },
+  { id: 5, name: "Hargeisa West", region_id: 1 },
+  { id: 6, name: "Berbera", region_id: 1 },
+  { id: 7, name: "Burao", region_id: 4 },
+  { id: 8, name: "Borama", region_id: 5 },
+  { id: 9, name: "Las Anod", region_id: 3 },
+  { id: 10, name: "Erigavo", region_id: 2 },
+  { id: 11, name: "Ceerigaabo", region_id: 2 },
+  { id: 12, name: "Caynabo", region_id: 3 },
+  { id: 13, name: "Laasqoray", region_id: 2 },
+  { id: 14, name: "Oodweyne", region_id: 4 },
+  { id: 15, name: "Sheikh", region_id: 1 },
+  { id: 16, name: "Zeila", region_id: 5 },
+];
+
+const pollingStations = [
+  {
+    id: 1,
+    name: "Hargeisa Central Station 1",
+    district_id: 1,
+    latitude: 9.5616,
+    longitude: 44.065,
+  },
+  {
+    id: 2,
+    name: "Hargeisa Central Station 2",
+    district_id: 1,
+    latitude: 9.562,
+    longitude: 44.0655,
+  },
+  {
+    id: 3,
+    name: "Hargeisa North Station 1",
+    district_id: 2,
+    latitude: 9.57,
+    longitude: 44.07,
+  },
+  {
+    id: 4,
+    name: "Berbera Station 1",
+    district_id: 6,
+    latitude: 10.4342,
+    longitude: 45.0137,
+  },
+  {
+    id: 5,
+    name: "Burao Station 1",
+    district_id: 7,
+    latitude: 9.5221,
+    longitude: 45.5336,
+  },
 ];
 
 export function SupporterRegistrationForm() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
+  const [selectedRegion, setSelectedRegion] = React.useState<
+    number | undefined
+  >();
+  const [selectedDistrict, setSelectedDistrict] = React.useState<
+    number | undefined
+  >();
+  const [selectedResidencyRegion, setSelectedResidencyRegion] = React.useState<
+    number | undefined
+  >();
+  const [selectedResidencyDistrict, setSelectedResidencyDistrict] =
+    React.useState<number | undefined>();
 
-  const form = useForm<SupporterRegistrationFormData>({
+  const form = useForm({
     resolver: zodResolver(supporterRegistrationSchema),
     defaultValues: {
-      receiveUpdates: true,
-      agreeToTerms: false,
-      agreeToDataProcessing: false,
+      firstname: "",
+      lastname: "",
+      phones: [{ phone_number: "", phone_type: "primary" as const }],
+      emergency_contacts: [{ name: "", relationship: "", phone_number: "" }],
+      receive_updates: true,
+      agree_to_terms: false,
+      agree_to_data_processing: false,
     },
   });
 
-  const onSubmit = async (data: SupporterRegistrationFormData) => {
+  const {
+    fields: phoneFields,
+    append: appendPhone,
+    remove: removePhone,
+  } = useFieldArray({
+    control: form.control,
+    name: "phones",
+  });
+
+  const {
+    fields: emergencyFields,
+    append: appendEmergency,
+    remove: removeEmergency,
+  } = useFieldArray({
+    control: form.control,
+    name: "emergency_contacts",
+  });
+
+  // Filter districts based on selected region
+  const filteredDistricts = selectedRegion
+    ? districts.filter((district) => district.region_id === selectedRegion)
+    : districts;
+
+  // Filter polling stations based on selected district
+  const filteredPollingStations = selectedDistrict
+    ? pollingStations.filter(
+        (station) => station.district_id === selectedDistrict
+      )
+    : pollingStations;
+
+  // Filter districts for residency based on selected residency region
+  const filteredResidencyDistricts = selectedResidencyRegion
+    ? districts.filter(
+        (district) => district.region_id === selectedResidencyRegion
+      )
+    : districts;
+
+  const onSubmit = async (data: any) => {
     setIsSubmitting(true);
     try {
       // Simulate API call
@@ -146,6 +183,36 @@ export function SupporterRegistrationForm() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleRegionChange = (regionId: string) => {
+    const regionIdNum = parseInt(regionId);
+    setSelectedRegion(regionIdNum);
+    setSelectedDistrict(undefined);
+    form.setValue("region_id", regionIdNum);
+    form.setValue("district_id", undefined);
+    form.setValue("pollingstation_id", undefined);
+  };
+
+  const handleDistrictChange = (districtId: string) => {
+    const districtIdNum = parseInt(districtId);
+    setSelectedDistrict(districtIdNum);
+    form.setValue("district_id", districtIdNum);
+    form.setValue("pollingstation_id", undefined);
+  };
+
+  const handleResidencyRegionChange = (regionId: string) => {
+    const regionIdNum = parseInt(regionId);
+    setSelectedResidencyRegion(regionIdNum);
+    setSelectedResidencyDistrict(undefined);
+    form.setValue("residency_region_id", regionIdNum);
+    form.setValue("residency_district_id", undefined);
+  };
+
+  const handleResidencyDistrictChange = (districtId: string) => {
+    const districtIdNum = parseInt(districtId);
+    setSelectedResidencyDistrict(districtIdNum);
+    form.setValue("residency_district_id", districtIdNum);
   };
 
   if (isSuccess) {
@@ -205,86 +272,77 @@ export function SupporterRegistrationForm() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="firstName">First Name *</Label>
+                <Label htmlFor="firstname">First Name *</Label>
                 <Input
-                  id="firstName"
-                  {...form.register("firstName")}
+                  id="firstname"
+                  {...form.register("firstname")}
                   placeholder="Enter your first name"
                 />
-                {form.formState.errors.firstName && (
+                {form.formState.errors.firstname && (
                   <p className="text-sm text-destructive">
-                    {form.formState.errors.firstName.message}
+                    {form.formState.errors.firstname.message}
                   </p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name *</Label>
+                <Label htmlFor="lastname">Last Name *</Label>
                 <Input
-                  id="lastName"
-                  {...form.register("lastName")}
+                  id="lastname"
+                  {...form.register("lastname")}
                   placeholder="Enter your last name"
                 />
-                {form.formState.errors.lastName && (
+                {form.formState.errors.lastname && (
                   <p className="text-sm text-destructive">
-                    {form.formState.errors.lastName.message}
+                    {form.formState.errors.lastname.message}
                   </p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phoneNumber">Phone Number *</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="phoneNumber"
-                    {...form.register("phoneNumber")}
-                    placeholder="+252 61 234 5678"
-                    className="pl-10"
-                  />
-                </div>
-                {form.formState.errors.phoneNumber && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.phoneNumber.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address *</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    {...form.register("email")}
-                    placeholder="your.email@example.com"
-                    className="pl-10"
-                  />
-                </div>
-                {form.formState.errors.email && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.email.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+                <Label htmlFor="middlename">Middle Name</Label>
                 <Input
-                  id="dateOfBirth"
-                  type="date"
-                  {...form.register("dateOfBirth")}
+                  id="middlename"
+                  {...form.register("middlename")}
+                  placeholder="Enter your middle name (optional)"
                 />
-                {form.formState.errors.dateOfBirth && (
+                {form.formState.errors.middlename && (
                   <p className="text-sm text-destructive">
-                    {form.formState.errors.dateOfBirth.message}
+                    {form.formState.errors.middlename.message}
                   </p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="gender">Gender *</Label>
+                <Label htmlFor="fourthname">Fourth Name</Label>
+                <Input
+                  id="fourthname"
+                  {...form.register("fourthname")}
+                  placeholder="Enter your fourth name (optional)"
+                />
+                {form.formState.errors.fourthname && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.fourthname.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="birthdate">Date of Birth</Label>
+                <Input
+                  id="birthdate"
+                  type="date"
+                  {...form.register("birthdate")}
+                />
+                {form.formState.errors.birthdate && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.birthdate.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="gender">Gender</Label>
                 <Select
                   onValueChange={(value) =>
                     form.setValue("gender", value as any)
@@ -305,185 +363,581 @@ export function SupporterRegistrationForm() {
                   </p>
                 )}
               </div>
-            </div>
-          </div>
-
-          {/* Address Information Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-semibold">Address Information</h3>
-            </div>
-            <Separator />
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="region">Region *</Label>
-                <Select
-                  onValueChange={(value) => form.setValue("region", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your region" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {regions.map((region) => (
-                      <SelectItem key={region} value={region}>
-                        {region}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.region && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.region.message}
-                  </p>
-                )}
-              </div>
 
               <div className="space-y-2">
-                <Label htmlFor="district">District *</Label>
-                <Select
-                  onValueChange={(value) => form.setValue("district", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your district" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {districts.map((district) => (
-                      <SelectItem key={district} value={district}>
-                        {district}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.district && (
+                <Label htmlFor="language">Language</Label>
+                <Input
+                  id="language"
+                  {...form.register("language")}
+                  placeholder="Primary language (optional)"
+                />
+                {form.formState.errors.language && (
                   <p className="text-sm text-destructive">
-                    {form.formState.errors.district.message}
+                    {form.formState.errors.language.message}
                   </p>
                 )}
               </div>
 
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="address">Full Address *</Label>
+                <Label htmlFor="special_needs">Special Needs</Label>
                 <Textarea
-                  id="address"
-                  {...form.register("address")}
-                  placeholder="Enter your complete address"
+                  id="special_needs"
+                  {...form.register("special_needs")}
+                  placeholder="Any special needs or accessibility requirements (optional)"
+                  rows={2}
+                />
+                {form.formState.errors.special_needs && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.special_needs.message}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Contact Information Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Phone className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-semibold">Contact Information</h3>
+            </div>
+            <Separator />
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    {...form.register("email")}
+                    placeholder="your.email@example.com"
+                    className="pl-10"
+                  />
+                </div>
+                {form.formState.errors.email && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.email.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Phone Numbers */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Phone Numbers *</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      appendPhone({ phone_number: "", phone_type: "secondary" })
+                    }
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Phone
+                  </Button>
+                </div>
+
+                {phoneFields.map((field, index) => (
+                  <div key={field.id} className="grid gap-4 md:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label htmlFor={`phones.${index}.phone_number`}>
+                        Phone Number {index === 0 ? "(Primary)" : ""}
+                      </Label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          {...form.register(`phones.${index}.phone_number`)}
+                          placeholder="+252 61 234 5678"
+                          className="pl-10"
+                        />
+                      </div>
+                      {form.formState.errors.phones?.[index]?.phone_number && (
+                        <p className="text-sm text-destructive">
+                          {
+                            form.formState.errors.phones[index]?.phone_number
+                              ?.message
+                          }
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`phones.${index}.phone_type`}>Type</Label>
+                      <Select
+                        onValueChange={(value) =>
+                          form.setValue(
+                            `phones.${index}.phone_type`,
+                            value as any
+                          )
+                        }
+                        defaultValue={field.phone_type}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="primary">Primary</SelectItem>
+                          <SelectItem value="secondary">Secondary</SelectItem>
+                          <SelectItem value="emergency">Emergency</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {form.formState.errors.phones?.[index]?.phone_type && (
+                        <p className="text-sm text-destructive">
+                          {
+                            form.formState.errors.phones[index]?.phone_type
+                              ?.message
+                          }
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-end">
+                      {phoneFields.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removePhone(index)}
+                          className="w-full"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {form.formState.errors.phones && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.phones.message}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Emergency Contacts Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-semibold">Emergency Contacts</h3>
+            </div>
+            <Separator />
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>Emergency Contacts *</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    appendEmergency({
+                      name: "",
+                      relationship: "",
+                      phone_number: "",
+                    })
+                  }
+                  disabled={emergencyFields.length >= 3}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Contact
+                </Button>
+              </div>
+
+              {emergencyFields.map((field, index) => (
+                <div key={field.id} className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor={`emergency_contacts.${index}.name`}>
+                      Contact Name
+                    </Label>
+                    <Input
+                      {...form.register(`emergency_contacts.${index}.name`)}
+                      placeholder="Full name"
+                    />
+                    {form.formState.errors.emergency_contacts?.[index]
+                      ?.name && (
+                      <p className="text-sm text-destructive">
+                        {
+                          form.formState.errors.emergency_contacts[index]?.name
+                            ?.message
+                        }
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor={`emergency_contacts.${index}.relationship`}>
+                      Relationship
+                    </Label>
+                    <Input
+                      {...form.register(
+                        `emergency_contacts.${index}.relationship`
+                      )}
+                      placeholder="e.g., Father, Mother, Spouse"
+                    />
+                    {form.formState.errors.emergency_contacts?.[index]
+                      ?.relationship && (
+                      <p className="text-sm text-destructive">
+                        {
+                          form.formState.errors.emergency_contacts[index]
+                            ?.relationship?.message
+                        }
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor={`emergency_contacts.${index}.phone_number`}>
+                      Phone Number
+                    </Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        {...form.register(
+                          `emergency_contacts.${index}.phone_number`
+                        )}
+                        placeholder="+252 61 234 5678"
+                        className="pl-10"
+                      />
+                    </div>
+                    {form.formState.errors.emergency_contacts?.[index]
+                      ?.phone_number && (
+                      <p className="text-sm text-destructive">
+                        {
+                          form.formState.errors.emergency_contacts[index]
+                            ?.phone_number?.message
+                        }
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor={`emergency_contacts.${index}.email`}>
+                      Email (Optional)
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        {...form.register(`emergency_contacts.${index}.email`)}
+                        placeholder="email@example.com"
+                        className="pl-10"
+                      />
+                    </div>
+                    {form.formState.errors.emergency_contacts?.[index]
+                      ?.email && (
+                      <p className="text-sm text-destructive">
+                        {
+                          form.formState.errors.emergency_contacts[index]?.email
+                            ?.message
+                        }
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor={`emergency_contacts.${index}.address`}>
+                      Address (Optional)
+                    </Label>
+                    <Input
+                      {...form.register(`emergency_contacts.${index}.address`)}
+                      placeholder="Contact's address"
+                    />
+                    {form.formState.errors.emergency_contacts?.[index]
+                      ?.address && (
+                      <p className="text-sm text-destructive">
+                        {
+                          form.formState.errors.emergency_contacts[index]
+                            ?.address?.message
+                        }
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex items-end md:col-span-2">
+                    {emergencyFields.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeEmergency(index)}
+                        className="w-full"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Remove Contact
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {form.formState.errors.emergency_contacts && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.emergency_contacts.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Residency Location Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-semibold">Residency Location</h3>
+            </div>
+            <Separator />
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="residency_region_id">Region</Label>
+                <Select onValueChange={handleResidencyRegionChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your residency region" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {regions.map((region) => (
+                      <SelectItem key={region.id} value={region.id.toString()}>
+                        {region.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.residency_region_id && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.residency_region_id.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="residency_district_id">District</Label>
+                <Select
+                  onValueChange={handleResidencyDistrictChange}
+                  disabled={!selectedResidencyRegion}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your residency district" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredResidencyDistricts.map((district) => (
+                      <SelectItem
+                        key={district.id}
+                        value={district.id.toString()}
+                      >
+                        {district.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.residency_district_id && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.residency_district_id.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="residency_address">Residency Address</Label>
+                <Textarea
+                  id="residency_address"
+                  {...form.register("residency_address")}
+                  placeholder="Enter your complete residency address (optional)"
                   rows={3}
                 />
-                {form.formState.errors.address && (
+                {form.formState.errors.residency_address && (
                   <p className="text-sm text-destructive">
-                    {form.formState.errors.address.message}
+                    {form.formState.errors.residency_address.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="residency_latitude">Latitude</Label>
+                <div className="relative">
+                  <Navigation className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="residency_latitude"
+                    type="number"
+                    step="any"
+                    {...form.register("residency_latitude", {
+                      valueAsNumber: true,
+                    })}
+                    placeholder="9.5616"
+                    className="pl-10"
+                  />
+                </div>
+                {form.formState.errors.residency_latitude && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.residency_latitude.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="residency_longitude">Longitude</Label>
+                <div className="relative">
+                  <Navigation className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="residency_longitude"
+                    type="number"
+                    step="any"
+                    {...form.register("residency_longitude", {
+                      valueAsNumber: true,
+                    })}
+                    placeholder="44.0650"
+                    className="pl-10"
+                  />
+                </div>
+                {form.formState.errors.residency_longitude && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.residency_longitude.message}
                   </p>
                 )}
               </div>
             </div>
           </div>
 
-          {/* ID Information Section */}
+          {/* Voting Location Information Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <IdCard className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-semibold">Identification</h3>
+              <MapPin className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-semibold">
+                Voting Location Information
+              </h3>
             </div>
             <Separator />
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="idType">ID Type *</Label>
-                <Select
-                  onValueChange={(value) =>
-                    form.setValue("idType", value as any)
-                  }
-                >
+                <Label htmlFor="region_id">Region</Label>
+                <Select onValueChange={handleRegionChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select ID type" />
+                    <SelectValue placeholder="Select your region" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="national_id">National ID</SelectItem>
-                    <SelectItem value="passport">Passport</SelectItem>
-                    <SelectItem value="drivers_license">
-                      Driver's License
-                    </SelectItem>
+                    {regions.map((region) => (
+                      <SelectItem key={region.id} value={region.id.toString()}>
+                        {region.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-                {form.formState.errors.idType && (
+                {form.formState.errors.region_id && (
                   <p className="text-sm text-destructive">
-                    {form.formState.errors.idType.message}
+                    {form.formState.errors.region_id.message}
                   </p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="idNumber">ID Number *</Label>
-                <Input
-                  id="idNumber"
-                  {...form.register("idNumber")}
-                  placeholder="Enter your ID number"
+                <Label htmlFor="district_id">District</Label>
+                <Select
+                  onValueChange={handleDistrictChange}
+                  disabled={!selectedRegion}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your district" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredDistricts.map((district) => (
+                      <SelectItem
+                        key={district.id}
+                        value={district.id.toString()}
+                      >
+                        {district.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.district_id && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.district_id.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="voting_address">Voting Address</Label>
+                <Textarea
+                  id="voting_address"
+                  {...form.register("voting_address")}
+                  placeholder="Enter your complete voting address (optional)"
+                  rows={3}
                 />
-                {form.formState.errors.idNumber && (
+                {form.formState.errors.voting_address && (
                   <p className="text-sm text-destructive">
-                    {form.formState.errors.idNumber.message}
+                    {form.formState.errors.voting_address.message}
                   </p>
                 )}
               </div>
-            </div>
-          </div>
 
-          {/* Preferences Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-semibold">Preferences</h3>
-            </div>
-            <Separator />
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="preferredLanguage">Preferred Language *</Label>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="pollingstation_id">Polling Station</Label>
                 <Select
                   onValueChange={(value) =>
-                    form.setValue("preferredLanguage", value as any)
+                    form.setValue("pollingstation_id", parseInt(value))
                   }
+                  disabled={!selectedDistrict}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select language" />
+                    <SelectValue placeholder="Select your polling station" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="somali">Somali</SelectItem>
-                    <SelectItem value="arabic">Arabic</SelectItem>
-                    <SelectItem value="english">English</SelectItem>
+                    {filteredPollingStations.map((station) => (
+                      <SelectItem
+                        key={station.id}
+                        value={station.id.toString()}
+                      >
+                        {station.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-                {form.formState.errors.preferredLanguage && (
+                {form.formState.errors.pollingstation_id && (
                   <p className="text-sm text-destructive">
-                    {form.formState.errors.preferredLanguage.message}
+                    {form.formState.errors.pollingstation_id.message}
                   </p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="communicationMethod">
-                  Communication Method *
-                </Label>
-                <Select
-                  onValueChange={(value) =>
-                    form.setValue("communicationMethod", value as any)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sms">SMS</SelectItem>
-                    <SelectItem value="email">Email</SelectItem>
-                    <SelectItem value="phone">Phone Call</SelectItem>
-                    <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.communicationMethod && (
+                <Label htmlFor="latitude">Latitude</Label>
+                <div className="relative">
+                  <Navigation className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="latitude"
+                    type="number"
+                    step="any"
+                    {...form.register("latitude", { valueAsNumber: true })}
+                    placeholder="9.5616"
+                    className="pl-10"
+                  />
+                </div>
+                {form.formState.errors.latitude && (
                   <p className="text-sm text-destructive">
-                    {form.formState.errors.communicationMethod.message}
+                    {form.formState.errors.latitude.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="longitude">Longitude</Label>
+                <div className="relative">
+                  <Navigation className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="longitude"
+                    type="number"
+                    step="any"
+                    {...form.register("longitude", { valueAsNumber: true })}
+                    placeholder="44.0650"
+                    className="pl-10"
+                  />
+                </div>
+                {form.formState.errors.longitude && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.longitude.message}
                   </p>
                 )}
               </div>
@@ -492,66 +946,59 @@ export function SupporterRegistrationForm() {
 
           {/* Additional Information Section */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Additional Information</h3>
+            <div className="flex items-center gap-2">
+              <IdCard className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-semibold">Additional Information</h3>
+            </div>
             <Separator />
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="occupation">Occupation</Label>
+                <Label htmlFor="voter_id">Voter ID</Label>
                 <Input
-                  id="occupation"
-                  {...form.register("occupation")}
-                  placeholder="Your profession or job"
+                  id="voter_id"
+                  {...form.register("voter_id")}
+                  placeholder="Your voter identification number"
                 />
+                {form.formState.errors.voter_id && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.voter_id.message}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="education">Education Level</Label>
-                <Select
-                  onValueChange={(value) => form.setValue("education", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select education level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="primary">Primary School</SelectItem>
-                    <SelectItem value="secondary">Secondary School</SelectItem>
-                    <SelectItem value="diploma">Diploma</SelectItem>
-                    <SelectItem value="bachelor">Bachelor's Degree</SelectItem>
-                    <SelectItem value="master">Master's Degree</SelectItem>
-                    <SelectItem value="phd">PhD</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="fav_party">Favorite Party</Label>
+                <Input
+                  id="fav_party"
+                  {...form.register("fav_party")}
+                  placeholder="Your preferred political party"
+                />
+                {form.formState.errors.fav_party && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.fav_party.message}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="specialNeeds">
-                  Special Needs or Accessibility Requirements
+                <Label htmlFor="photo_verification">
+                  Photo Verification URL
                 </Label>
-                <Textarea
-                  id="specialNeeds"
-                  {...form.register("specialNeeds")}
-                  placeholder="Any special needs or accessibility requirements"
-                  rows={2}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="emergencyContact">Emergency Contact Name</Label>
-                <Input
-                  id="emergencyContact"
-                  {...form.register("emergencyContact")}
-                  placeholder="Emergency contact person"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="emergencyPhone">Emergency Contact Phone</Label>
-                <Input
-                  id="emergencyPhone"
-                  {...form.register("emergencyPhone")}
-                  placeholder="+252 61 234 5678"
-                />
+                <div className="relative">
+                  <Upload className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="photo_verification"
+                    {...form.register("photo_verification")}
+                    placeholder="https://example.com/photo.jpg"
+                    className="pl-10"
+                  />
+                </div>
+                {form.formState.errors.photo_verification && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.photo_verification.message}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -564,15 +1011,15 @@ export function SupporterRegistrationForm() {
             <div className="space-y-4">
               <div className="flex items-start space-x-2">
                 <Checkbox
-                  id="agreeToTerms"
-                  checked={form.watch("agreeToTerms")}
+                  id="agree_to_terms"
+                  checked={form.watch("agree_to_terms")}
                   onCheckedChange={(checked) =>
-                    form.setValue("agreeToTerms", checked as boolean)
+                    form.setValue("agree_to_terms", checked as boolean)
                   }
                 />
                 <div className="space-y-1">
                   <Label
-                    htmlFor="agreeToTerms"
+                    htmlFor="agree_to_terms"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
                     I agree to the terms and conditions *
@@ -583,23 +1030,26 @@ export function SupporterRegistrationForm() {
                   </p>
                 </div>
               </div>
-              {form.formState.errors.agreeToTerms && (
+              {form.formState.errors.agree_to_terms && (
                 <p className="text-sm text-destructive">
-                  {form.formState.errors.agreeToTerms.message}
+                  {form.formState.errors.agree_to_terms.message}
                 </p>
               )}
 
               <div className="flex items-start space-x-2">
                 <Checkbox
-                  id="agreeToDataProcessing"
-                  checked={form.watch("agreeToDataProcessing")}
+                  id="agree_to_data_processing"
+                  checked={form.watch("agree_to_data_processing")}
                   onCheckedChange={(checked) =>
-                    form.setValue("agreeToDataProcessing", checked as boolean)
+                    form.setValue(
+                      "agree_to_data_processing",
+                      checked as boolean
+                    )
                   }
                 />
                 <div className="space-y-1">
                   <Label
-                    htmlFor="agreeToDataProcessing"
+                    htmlFor="agree_to_data_processing"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
                     I consent to data processing *
@@ -610,22 +1060,22 @@ export function SupporterRegistrationForm() {
                   </p>
                 </div>
               </div>
-              {form.formState.errors.agreeToDataProcessing && (
+              {form.formState.errors.agree_to_data_processing && (
                 <p className="text-sm text-destructive">
-                  {form.formState.errors.agreeToDataProcessing.message}
+                  {form.formState.errors.agree_to_data_processing.message}
                 </p>
               )}
 
               <div className="flex items-center space-x-2">
                 <Switch
-                  id="receiveUpdates"
-                  checked={form.watch("receiveUpdates")}
+                  id="receive_updates"
+                  checked={form.watch("receive_updates")}
                   onCheckedChange={(checked) =>
-                    form.setValue("receiveUpdates", checked)
+                    form.setValue("receive_updates", checked)
                   }
                 />
                 <Label
-                  htmlFor="receiveUpdates"
+                  htmlFor="receive_updates"
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
                   Receive campaign updates and notifications

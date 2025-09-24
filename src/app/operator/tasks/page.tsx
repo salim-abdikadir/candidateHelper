@@ -61,10 +61,19 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { ModeToggle } from "@/components/theme-toggle";
+import { TaskAssignmentForm } from "@/components/forms/task-assignment-form";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export default function OperatorTasksPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [searchTerm, setSearchTerm] = useState("");
+  const [isRequestTaskOpen, setIsRequestTaskOpen] = useState(false);
 
   // Mock data for tasks
   const tasks = [
@@ -199,10 +208,25 @@ export default function OperatorTasksPage() {
                   Manage your assigned tasks and track progress
                 </p>
               </div>
-              <Button className="btn-gradient">
-                <Plus className="mr-2 h-4 w-4" />
-                Request Task
-              </Button>
+              <Dialog
+                open={isRequestTaskOpen}
+                onOpenChange={setIsRequestTaskOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button className="btn-gradient">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Request Task
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Request New Task</DialogTitle>
+                  </DialogHeader>
+                  <TaskAssignmentForm
+                    onSuccess={() => setIsRequestTaskOpen(false)}
+                  />
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
 
@@ -516,8 +540,3 @@ export default function OperatorTasksPage() {
     </SidebarProvider>
   );
 }
-
-
-
-
-

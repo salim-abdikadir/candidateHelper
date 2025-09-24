@@ -1,40 +1,25 @@
 "use client";
+
 import React, { useState } from "react";
 import Link from "next/link";
-import {
-  Shield,
-  Users,
-  UserCheck,
-  Eye,
-  EyeOff,
-  ArrowLeft,
-  CheckCircle,
-  Zap,
-} from "lucide-react";
-
+import { ArrowLeft, CheckCircle, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ModeToggle } from "@/components/theme-toggle";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AuthLoginForm } from "@/components/forms/auth-login-form";
+import { AuthRegisterForm } from "@/components/forms/auth-register-form";
 
 export default function AuthPage() {
-  const [showPassword, setShowPassword] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
-  const [selectedRole, setSelectedRole] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [error, setError] = useState("");
 
   const roleIcons = {
-    admin: <Shield className="h-5 w-5 text-destructive" />,
-    operator: <Users className="h-5 w-5 text-primary" />,
-    supporter: <UserCheck className="h-5 w-5 text-accent" />,
+    admin: "🛡️",
+    operator: "👥",
+    supporter: "✅",
   };
 
   const roleFeatures = {
@@ -61,18 +46,56 @@ export default function AuthPage() {
     ],
   };
 
-  const getRedirectPath = (role: string) => {
-    switch (role) {
-      case "admin":
-        return "/admin";
-      case "operator":
-        return "/operator";
-      case "supporter":
-        return "/supporter";
-      default:
-        return "/";
-    }
+  const handleSuccess = () => {
+    setIsSuccess(true);
   };
+
+  const handleError = (errorMessage: string) => {
+    setError(errorMessage);
+  };
+
+  if (isSuccess) {
+    return (
+      <div className="min-h-screen bg-background">
+        <nav className="border-b border-border bg-background/95 backdrop-blur">
+          <div className="container mx-auto px-4">
+            <div className="flex h-16 items-center justify-between">
+              <Button asChild variant="ghost" className="text-foreground">
+                <Link href="/">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Home
+                </Link>
+              </Button>
+              <div className="flex items-center space-x-4">
+                <ModeToggle />
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        <div className="container mx-auto px-4 py-12">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <Card className="w-full max-w-md">
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                  <h2 className="text-2xl font-bold text-green-700 mb-2">
+                    Success!
+                  </h2>
+                  <p className="text-muted-foreground">
+                    {isLogin ? "Login successful!" : "Registration successful!"}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Redirecting to your dashboard...
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -102,7 +125,7 @@ export default function AuthPage() {
                 <div className="text-center mb-8">
                   <div className="flex justify-center mb-4">
                     <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-primary">
-                      <Shield className="h-10 w-10 text-primary-foreground" />
+                      <span className="text-2xl">🛡️</span>
                     </div>
                   </div>
                   <h1 className="text-3xl font-bold text-foreground">
@@ -122,143 +145,32 @@ export default function AuthPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <form className="space-y-4">
-                      {!isLogin && (
-                        <div className="space-y-2">
-                          <Label htmlFor="fullName">Full Name</Label>
-                          <Input
-                            id="fullName"
-                            type="text"
-                            placeholder="Enter your full name"
-                            className="h-12"
-                          />
-                        </div>
-                      )}
+                    {error && (
+                      <Alert variant="destructive">
+                        <AlertDescription>{error}</AlertDescription>
+                      </Alert>
+                    )}
 
-                      <div className="space-y-2">
-                        <Label htmlFor="role">Role</Label>
-                        <Select
-                          value={selectedRole}
-                          onValueChange={setSelectedRole}
-                        >
-                          <SelectTrigger className="h-12">
-                            <SelectValue placeholder="Select your role" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="admin">
-                              <div className="flex items-center space-x-2">
-                                {roleIcons.admin}
-                                <span>Admin</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="operator">
-                              <div className="flex items-center space-x-2">
-                                {roleIcons.operator}
-                                <span>Operator</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="supporter">
-                              <div className="flex items-center space-x-2">
-                                {roleIcons.supporter}
-                                <span>Supporter</span>
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="phone">Phone Number</Label>
-                        <Input
-                          id="phone"
-                          type="tel"
-                          placeholder="Enter your phone number"
-                          className="h-12"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
-                        <div className="relative">
-                          <Input
-                            id="password"
-                            type={showPassword ? "text" : "password"}
-                            placeholder="Enter your password"
-                            className="h-12 pr-10"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-0 top-0 h-12 px-3 py-2 hover:bg-transparent"
-                            onClick={() => setShowPassword(!showPassword)}
-                          >
-                            {showPassword ? (
-                              <EyeOff className="h-4 w-4 text-muted-foreground" />
-                            ) : (
-                              <Eye className="h-4 w-4 text-muted-foreground" />
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-
-                      {isLogin && (
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id="remember"
-                              className="rounded border-input"
-                            />
-                            <Label htmlFor="remember" className="text-sm">
-                              Remember me
-                            </Label>
-                          </div>
-                          <Button variant="link" className="px-0 text-sm">
-                            Forgot password?
-                          </Button>
-                        </div>
-                      )}
-
-                      <Button
-                        asChild
-                        type="submit"
-                        className="w-full h-12 text-base btn-gradient"
-                      >
-                        <Link href={getRedirectPath(selectedRole)}>
-                          {isLogin ? "Sign In" : "Create Account"}
-                          <Zap className="ml-2 h-4 w-4" />
-                        </Link>
-                      </Button>
-                    </form>
-
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
-                      </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">
-                          Or continue with
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <Button variant="outline" className="h-12">
-                        <Shield className="mr-2 h-4 w-4" />
-                        Google
-                      </Button>
-                      <Button variant="outline" className="h-12">
-                        <Users className="mr-2 h-4 w-4" />
-                        Facebook
-                      </Button>
-                    </div>
+                    {isLogin ? (
+                      <AuthLoginForm
+                        onSuccess={handleSuccess}
+                        onError={handleError}
+                      />
+                    ) : (
+                      <AuthRegisterForm
+                        onSuccess={handleSuccess}
+                        onError={handleError}
+                      />
+                    )}
 
                     <div className="text-center">
                       <Button
                         variant="link"
                         className="px-0"
-                        onClick={() => setIsLogin(!isLogin)}
+                        onClick={() => {
+                          setIsLogin(!isLogin);
+                          setError("");
+                        }}
                       >
                         {isLogin
                           ? "Don't have an account? Sign up"
@@ -290,16 +202,12 @@ export default function AuthPage() {
                   {Object.entries(roleFeatures).map(([role, features]) => (
                     <Card
                       key={role}
-                      className={`card-professional transition-all duration-300 ${
-                        selectedRole === role
-                          ? "ring-2 ring-primary shadow-strong"
-                          : "hover:shadow-strong"
-                      }`}
+                      className="card-professional transition-all duration-300 hover:shadow-strong"
                     >
                       <CardHeader>
                         <div className="flex items-center space-x-3">
                           <div
-                            className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                            className={`flex h-10 w-10 items-center justify-center rounded-xl text-xl ${
                               role === "admin"
                                 ? "bg-destructive/10"
                                 : role === "operator"
